@@ -101,19 +101,8 @@ int main() {
                         swap_int(prev[x], prev[y]);
                         swap_int(next[x], next[y]);
                     }
-
-//                    int pxi, pyi, nxi, nyi;
-//                    for (j = 0; j <= m; ++j) {
-//                        if (prev[j] == x) pxi = j;
-//                        if (prev[j] == y) pyi = j;
-//                        if (next[j] == x) nxi = j;
-//                        if (next[j] == y) nyi = j;
-//                    }
-//                    swap_int(prev[pxi], prev[pyi]);
-//                    swap_int(next[nxi], next[nyi]);
                 }
             }// else
-            // print
 //            print_order();
 //            print_vorder();
         }//for
