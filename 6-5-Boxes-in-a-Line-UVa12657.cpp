@@ -16,6 +16,12 @@ void swap_int(int &x, int &y) {
     y = tmp;
 }
 
+void link(int L, int R)
+{
+    next[L] = R;
+    prev[R] = L;
+}
+
 void print_order() {
     int i;
     for (i = next[0]; i != 0; i = next[i]) {
