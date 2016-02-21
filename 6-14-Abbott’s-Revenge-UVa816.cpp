@@ -6,177 +6,153 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <string>
-#include <vector>
 #include <queue>
-#include <iostream>
-#include <algorithm>
-#include <map>
-
-std::map<char, int> direction;
-std::map<char, int> instruction;
-char arrow[4][3] = {{'N', 'W', 'E'},
-                    {'E', 'N', 'S'},
-                    {'W', 'S', 'N'},
-                    {'S', 'E', 'W'}};
-std::vector<int> intersection[32][32][4];
-int enter_r, enter_c, goal_r, goal_c;
+#include <stack>
 
 
-void init_direction() {
-    direction['N'] = 0;
-    direction['E'] = 1;
-    direction['W'] = 2;
-    direction['S'] = 3;
-}
+int map[9][9][4];
+int visit[9][9][4];
+int row_path[10000] = {0};
+int prev[10000] = {0};
+int col_path[10000] = {0};
+int direction_path[10000] = {0};
+char direction_set[] = "NESW";
 
-void init_arrow() {
-    instruction['F'] = 0;
-    instruction['L'] = 1;
-    instruction['R'] = 2;
-}
 
-int get_direction(char c) {
-    if (direction.count(c))
-        return direction[c];
-    else
-        return -1;
-}
-
-int get_arrow(char c) {
-    if (instruction.count(c))
-        return instruction[c];
-    else
-        return -1;
-}
-
-char get_next_direction(char d, char a) {
-    return arrow[get_direction(d)][get_arrow(a)];
-}
-
-int move_next(int r, int c, char d) {
-    if (d == 'N') --r;
-    else if (d == 'S') ++r;
-    else if (d == 'W') --c;
-    else if (d == 'E') ++c;
-    else return -1;
-    return r * 100 + c * 10 + get_direction(d);
-}
-
-bool is_valid_pos(int pos) {
-    return pos >= 110 && pos <= 993;
-}
-
-int read_maze() {
-    for (int i = 0; i < 9; ++i) {
-        for (int j = 0; j < 9; ++j) {
-            for (int k = 0; k < 4; ++k) {
-                intersection[i][j][k].clear();
-            }
-        }
+int direction_encode(char dc) {
+    switch (dc) {
+        case 'N':
+            return 0;
+        case 'E':
+            return 1;
+        case 'S':
+            return 2;
     }
-    int r, c, dir, i, valid = 1, next_pos;
-    char ins[10];
-    while (scanf("%d%d", &r, &c) && r) {
-        ++valid;
-        while (scanf("%s", ins) && ins[0] != '*') {
-            size_t len = strlen(ins);
-            if ((dir = get_direction(ins[0])) == -1) {
-                valid = 0;
-                continue;
-            }
-            for (i = 1; i < len; ++i) {
-                if (get_arrow(ins[i]) == -1) {
-                    valid = 0;
-                    continue;
-                }
-                char next_d = get_next_direction(ins[0], ins[i]);
-                next_pos = move_next(r, c, next_d);
-                if (is_valid_pos(next_pos))
-                    intersection[r][c][dir].push_back(next_pos);
-            }
-        }
-    }
-    return valid;
+    return 3;
 }
 
-
-void solve_maze() {
-    char direction;
-    scanf("%d %d %c %d %d", &enter_r, &enter_c, &direction, &goal_r, &goal_c);
-    int node = read_maze();
-    std::vector<int> path;
-    std::vector<int> prev;
-    int current_pos = move_next(enter_r, enter_c, direction);
-    if (current_pos / 100 == goal_r && current_pos % 100 / 10 == goal_c) {
-        printf("  (%d,%d) (%d,%d)\n", enter_r, enter_c, goal_r, goal_c);
-        return;
+int get_next_direction(char d, char t) {
+    int turn = 0;
+    switch (t) {
+        case 'L':
+            turn = 3;
+            break;
+        case 'R':
+            turn = 1;
+            break;
     }
-    if (node == 0 || !is_valid_pos(current_pos)) {
-        printf("  No Solution Possible\n");
-        return;
-    }
+    return (turn + direction_encode(d)) % 4;
+}
 
-    std::queue<int> queue;
-    std::queue<int> p_queue;
-    queue.push(current_pos);
-    p_queue.push(0);
-    while (!queue.empty()) {
-//        for (int i = 0; i < path.size(); ++i) {
-//            printf("p:%d  current: (%d) \n", path[prev[i]], path[i]);
-//        }
-//        printf("\n");
-
-        current_pos = queue.front();
-//        printf("current:%d %d %d\n", current_pos / 100, current_pos % 100 / 10, current_pos % 10);
-//        if(!is_valid_pos(current_pos)) break;
-        path.push_back(current_pos);
-        prev.push_back(p_queue.front());
-        if (current_pos / 100 == goal_r && current_pos % 100 / 10 == goal_c) {
-            std::vector<int> result;
-            for (int i = prev.size() - 1; i != 0; i = prev[i]) {
-                result.push_back(path[i]);
-            }
-            result.push_back(path[0]);
-            result.push_back(enter_r * 100 + enter_c * 10 + get_direction(direction));
-            for (int j = result.size() - 1, i = 1; j >= 0; --j, ++i) {
-                if (i % 10 != 1) {
-                    printf(" ");
-                } else {
-                    printf("  ");
-                }
-                printf("(%d,%d)", result[j] / 100, result[j] % 100 / 10);
-                if (i % 10 == 0 && j != 0) printf("\n");
-            }
-            printf("\n");
-            return;
-        }
-        int p = path.size() - 1;
-        std::vector<int> next = intersection[current_pos / 100][current_pos % 100 / 10][current_pos % 10];
-        for (int i = 0;
-             i < next.size(); ++i) {
-            if (std::find(path.begin(), path.end(), next[i]) == path.end()) {
-                queue.push(next[i]);
-                p_queue.push(p);
-            }
-        }
-        queue.pop();
-        p_queue.pop();
-    }
-    if (current_pos / 100 != goal_r || current_pos % 100 / 10 != goal_c) {
-        printf("  No Solution Possible\n");
-        return;
+void move_next(int &r, int &c, char d) {
+    switch (d) {
+        case 'N':
+            --r;
+            break;
+        case 'S':
+            ++r;
+            break;
+        case 'E':
+            ++c;
+            break;
+        case 'W':
+            --c;
+            break;
+        default:
+            break;
     }
 }
 
+bool is_valid_pos(int r, int c) {
+    return (r > 0 && r < 10 && c > 0 && c < 10);
+}
 
 int main() {
-    std::string name;
-    init_direction();
-    init_arrow();
-    while (getline(std::cin, name) && name != "END") {
-        std::cout << name << "\n";
-        solve_maze();
+    char maze[1024], ins[1024];
+    int er, ec, gr, gc, cur_pos;
+    int r, c, d;
+    int counter;
+    while (gets(maze) && strcmp("END", maze)) {
+        printf("%s\n", maze);
+        std::queue<int> p_queue;
+        counter = 0;
+        memset(map, 0, sizeof(map));
+        memset(visit, 0, sizeof(visit));
+        memset(row_path, 0, sizeof(row_path));
+        memset(col_path, 0, sizeof(col_path));
+        memset(direction_path, 0, sizeof(direction_path));
+        memset(prev, 0, sizeof(prev));
+        scanf("%d %d %s %d %d", &er, &ec, ins, &gr, &gc);
+
+        prev[counter] = counter - 1;
+        row_path[counter] = er;
+        col_path[counter] = ec;
+        direction_path[counter++] = direction_encode(ins[0]);
+
+        move_next(er, ec, ins[0]);
+        prev[counter] = counter - 1;
+        row_path[counter] = er;
+        col_path[counter] = ec;
+        direction_path[counter++] = direction_encode(ins[0]);
+
+        p_queue.push(counter - 1);
+
+        while (scanf("%d", &r) == 1 && r) {
+            scanf("%d", &c);
+            while (scanf("%s", ins) == 1 && ins[0] != '*') {
+                d = direction_encode(ins[0]);
+                for (int i = 1; ins[i]; ++i) {
+                    map[r][c][d] |= (1 << (get_next_direction(ins[0], ins[i])));
+                }
+//                printf("%d %d %c\n", r, c, direction_set[d]);
+            }
+        }
+        while (!p_queue.empty()) {
+            cur_pos = p_queue.front();
+            r = row_path[cur_pos], c = col_path[cur_pos], d = direction_path[cur_pos];
+            visit[r][c][d] = 1;
+//            for (int i = 0; i < counter; ++i) {
+//                printf("prev[%d]:%d, path:%d %d %c\n", i, prev[i], row_path[prev[i]], col_path[prev[i]],
+//                       direction_set[direction_path[prev[i]]]);
+//            }
+//            printf("current: %d %d %c\n", r, c, direction_set[d]);
+            if (r == gr && c == gc) {
+                std::stack<int> result;
+                for (int i = cur_pos; i != -1; i = prev[i]) {
+//                    printf("%d %d %d\n", i, prev[i], path[i]);
+                    result.push(i);
+                }
+                for (int j = 1; !result.empty(); ++j, result.pop()) {
+                    if (j % 10 == 1) printf("  ");
+                    else printf(" ");
+                    printf("(%d,%d)", row_path[result.top()], col_path[result.top()]);
+                    if (j % 10 == 0 && result.size() != 1) printf("\n");
+                }
+                break;
+            } else {
+                int next = map[r][c][d];
+                for (int i = 0; i < 4; ++i) {
+                    if (next & (1 << i)) {
+                        int tr = r, tc = c;
+                        move_next(tr, tc, direction_set[i]);
+                        if (!visit[tr][tc][i] && is_valid_pos(tr, tc)) {
+                            prev[counter] = cur_pos;
+                            row_path[counter] = tr;
+                            col_path[counter] = tc;
+                            direction_path[counter++] = i;
+                            p_queue.push(counter - 1);
+//                            printf("possible: %d %d %c\n", tr, tc, direction_set[i]);
+                        }
+                    }
+                }
+            }
+            p_queue.pop();
+        }
+        if (!(r == gr && c == gc)) {
+            printf("  No Solution Possible");
+        }
+        printf("\n");
+        while (getchar() != '\n');
     }
     return 0;
 }
